@@ -13,3 +13,170 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum ServiceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  email        String     @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  phone        String?
+  address      String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  
+  vehicles Vehicle[]
+  
+  @@map("users")
+}
+
+model Vehicle {
+  id            Int        @id @default(autoincrement())
+  userId        Int
+  vin           String?    @unique
+  make          String
+  model         String
+  year          Int
+  licensePlate  String?
+  mileage       Int?
+  color         String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  services  Service[]
+  
+  @@map("vehicles")
+}
+
+model Mechanic {
+  id                    Int                   @id @default(autoincrement())
+  employeeId            String?               @unique
+  firstName             String
+  lastName              String
+  email                 String?               @unique
+  phone                 String?
+  department            String?
+  hireDate              DateTime?
+  isActive              Boolean               @default(true)
+  createdAt             DateTime              @default(now())
+  
+  serviceAssignments ServiceAssignment[]
+  
+  @@map("mechanics")
+}
+
+model ServiceType {
+  id                      Int          @id @default(autoincrement())
+  name                    String
+  description             String?
+  estimatedDurationMinutes Int?
+  baseCost               Decimal?     @db.Decimal(10,2) 
+  isActive               Boolean      @default(true)
+  
+  services Service[]
+  
+  @@map("service_types")
+}
+
+model Service {
+  id               Int                    @id @default(autoincrement())
+  vehicleId        Int
+  serviceTypeId    Int
+  scheduledDate    DateTime
+  completedDate    DateTime?
+  currentMileage   Int?
+  totalCost        Decimal?               @db.Decimal(10,2) 
+  status           ServiceStatus          @default(SCHEDULED)
+  notes            String?
+  createdAt        DateTime               @default(now())
+  
+  vehicle           Vehicle              @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  serviceType       ServiceType          @relation(fields: [serviceTypeId], references: [id])
+  serviceAssignments ServiceAssignment[]
+  serviceParts      ServicePart[]
+  invoice           Invoice?
+  
+  @@index([vehicleId])
+  @@index([scheduledDate])
+  @@index([status])
+  @@index([vehicleId, scheduledDate])
+  @@map("services")
+}
+
+model ServiceAssignment {
+  id           Int       @id @default(autoincrement())
+  serviceId    Int
+  mechanicId   Int
+  assignedDate DateTime  @default(now())
+  hoursWorked  Float?
+  notes        String?
+  
+  service  Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  mechanic Mechanic @relation(fields: [mechanicId], references: [id], onDelete: Cascade)
+  
+  @@unique([serviceId, mechanicId])
+  @@map("service_assignments")
+}
+
+model Part {
+  id            Int            @id @default(autoincrement())
+  partNumber    String?        @unique
+  name          String
+  description   String?
+  currentPrice  Decimal?       @db.Decimal(10,2) 
+  stockQuantity Int            @default(0)
+  isActive      Boolean        @default(true)
+  
+  serviceParts ServicePart[]
+  
+  @@map("parts")
+}
+
+model ServicePart {
+  id        Int     @id @default(autoincrement())
+  serviceId Int
+  partId    Int
+  quantityUsed Int  @default(1) 
+  unitCost  Decimal?            @db.Decimal(10,2) 
+  
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  part    Part    @relation(fields: [partId], references: [id], onDelete: Cascade)
+  
+  @@unique([serviceId, partId])
+  @@map("service_parts")
+}
+
+model Invoice {
+  id             Int           @id @default(autoincrement())
+  serviceId      Int           @unique
+  invoiceNumber  String?       @unique
+  issueDate      DateTime      @default(now())
+  dueDate        DateTime?
+  totalAmount    Decimal?      @db.Decimal(10,2) // Changed from Float?
+  taxAmount      Decimal?      @db.Decimal(10,2) @default(0) // Changed from Float?
+  paymentStatus  PaymentStatus @default(PENDING)
+  paymentDate    DateTime?
+  notes          String?
+  
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  
+  @@index([paymentStatus])
+  @@index([dueDate])
+  @@index([issueDate])
+  @@map("invoices")
+}
