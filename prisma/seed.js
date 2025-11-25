@@ -1,132 +1,41 @@
-import { PrismaClient } from '../src/generated/prisma/index.js';
-import bcrypt from 'bcrypt';
-
+import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding database...');
+  // --- Your other seed data can go here ---
 
-  // --- User ---
-  const passwordHash = await bcrypt.hash('password123', 10);
-
-  const user = await prisma.user.upsert({
-    where: { email: 'test@example.com' },
-    update: {},
-    create: {
-      email: 'test@example.com',
-      passwordHash,
-      firstName: 'Test',
-      lastName: 'User',
-      phone: '555-1234',
-      address: '123 Main St',
-    },
-  });
-
-  // --- Mechanic ---
-  const mechanic = await prisma.mechanic.upsert({
-    where: { email: 'mechanic@example.com' },
-    update: {},
-    create: {
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'mechanic@example.com',
-      phone: '555-9876',
-      department: 'General Repair',
-    },
-  });
-
-  // --- Service Type ---
-  let serviceType = await prisma.serviceType.findFirst({
-    where: { name: 'Oil Change' },
-  });
-
-  if (!serviceType) {
-    serviceType = await prisma.serviceType.create({
-      data: {
-        name: 'Oil Change',
-        description: 'Standard oil and filter change',
-        estimatedDurationMinutes: 45,
-        baseCost: 59.99,
-      },
-    });
-  }
-
-  // --- Part ---
-  const part = await prisma.part.upsert({
-    where: { name: 'Oil Filter' }, 
-    update: {},
+  console.log('Seeding parts...');
+  const part1 = await prisma.part.upsert({
+    where: { partNumber: 'PF-48' }, // <-- FIXED: Use a unique field for the 'where' clause
+    update: {}, // We don't want to change it if it exists
     create: {
       name: 'Oil Filter',
+      partNumber: 'PF-48', // <-- FIXED: Add the unique field to the 'create' object
       description: 'OEM oil filter',
       currentPrice: 14.99,
       stockQuantity: 20,
     },
   });
 
-  console.log(`🧹 Cleaning old vehicle data for user: ${user.email}...`);
-  await prisma.vehicle.deleteMany({
-    where: { userId: user.id },
-  });
-
-  // --- Vehicle ---
-  console.log('🚗 Creating new vehicle and service records...');
-  const vehicle = await prisma.vehicle.create({
-    data: {
-      userId: user.id,
-      make: 'Toyota',
-      model: 'Camry',
-      year: 2018,
-      mileage: 45000,
+  const part2 = await prisma.part.upsert({
+    where: { partNumber: 'AF-22' }, // Example for a second part
+    update: {},
+    create: {
+      name: 'Air Filter',
+      partNumber: 'AF-22',
+      description: 'OEM air filter',
+      currentPrice: 22.50,
+      stockQuantity: 30,
     },
   });
 
-  // --- Service ---
-  const service = await prisma.service.create({
-    data: {
-      vehicleId: vehicle.id,
-      serviceTypeId: serviceType.id,
-      scheduledDate: new Date(),
-      status: 'SCHEDULED',
-      notes: 'Initial service',
-    },
-  });
-
-  // --- Service Assignment ---
-  await prisma.serviceAssignment.create({
-    data: {
-      serviceId: service.id,
-      mechanicId: mechanic.id,
-      hoursWorked: 1.0,
-    },
-  });
-
-  // --- ServicePart ---
-  await prisma.servicePart.create({
-    data: {
-      serviceId: service.id,
-      partId: part.id,
-      quantityUsed: 1,
-      unitCost: 14.99,
-    },
-  });
-
-  // --- Invoice ---
-  await prisma.invoice.create({
-    data: {
-      serviceId: service.id,
-      totalAmount: 74.98,
-      taxAmount: 4.76,
-      paymentStatus: 'PENDING',
-      dueDate: new Date(),
-    },
-  });
-
-  console.log('🌱 Database seeded successfully.');
+  console.log({ part1, part2 });
+  console.log('Database seeded successfully!');
 }
 
 main()
-  .catch((err) => {
-    console.error(err);
+  .catch((e) => {
+    console.error('Error seeding database:', e);
     process.exit(1);
   })
   .finally(async () => {
