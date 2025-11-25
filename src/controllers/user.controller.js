@@ -1,4 +1,5 @@
 import { prisma } from '../prisma/client.js';
+import bcrypt from 'bcrypt';
 
 export async function getUser(req, res) {
   try {
@@ -29,3 +30,41 @@ export async function updateUser(req, res) {
     res.status(500).json({ error: err.message });
   }
 }
+
+export async function createUser(req, res) {
+  try {
+    const { email, password, firstName, lastName, phone, address } = req.body;
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const newUser = await prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        firstName,
+        lastName,
+        phone,
+        address
+      }
+    });
+
+    res.status(201).json(newUser);  
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+export async function deleteUser(req, res) {
+  try {
+    const id = Number(req.params.id);
+
+    const deletedUser = await prisma.user.delete({
+      where: { id }
+    });
+
+    res.status(200).json({ message: 'User deleted', user: deletedUser });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+

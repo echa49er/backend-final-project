@@ -1,7 +1,7 @@
-import express from 'express'
-import * as VehicleController from '../controllers/vehicle.controller.js'
+import express from 'express';
+import * as VehicleController from '../controllers/vehicle.controller.js';
 
-const router = express.Router()
+const router = express.Router();
 
 /**
  * @openapi
@@ -12,12 +12,10 @@ const router = express.Router()
  *       200:
  *         description: List of vehicles
  */
-router.get('/', getVehicles);
+router.get('/', VehicleController.getVehicles); 
+router.get('/:id', VehicleController.getVehicleById);
+router.post('/', VehicleController.createVehicle);
+router.put('/:id', VehicleController.updateVehicle);
+router.delete('/:id', VehicleController.deleteVehicle);
 
-router.get('/', VehicleController.getVehicles)
-router.get('/:id', VehicleController.getVehicleById)
-router.post('/', VehicleController.createVehicle)
-router.put('/:id', VehicleController.updateVehicle)
-router.delete('/:id', VehicleController.deleteVehicle)
-
-export default router
+export default router;

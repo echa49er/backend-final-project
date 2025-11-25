@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from './generated/prisma/index.js';
 import { setupSwagger } from './swagger.js';
 
 // Route imports
@@ -46,7 +46,7 @@ app.get('/test', async (req, res) => {
 // API Routes
 // ======================
 app.use('/auth', authRoutes);
-app.use('/users', userRoutes);
+app.use('/user', userRoutes);
 app.use('/vehicles', vehicleRoutes);
 app.use('/services', serviceRoutes);
 app.use('/mechanics', mechanicRoutes);
