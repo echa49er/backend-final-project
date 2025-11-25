@@ -1,5 +1,5 @@
 // Import from the custom output path specified in your schema.prisma
-import { PrismaClient } from '../src/generated/prisma';
+import { PrismaClient } from '../src/generated/prisma/index.js';
 const prisma = new PrismaClient();
 
 async function main() {
