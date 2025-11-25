@@ -1,19 +1,29 @@
+// src/swagger.js
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 
-const options = {
-  definition: {
+export const setupSwagger = (app) => {
+  const swaggerDefinition = {
     openapi: '3.0.0',
     info: {
       title: 'Vehicle Service API',
-      version: '1.0.0'
-    }
-  },
-  apis: ['./src/routes/*.js'] // we’ll use JSDoc comments in routes
-};
+      version: '1.0.0',
+      description: 'API documentation for the Vehicle Service API',
+    },
+    servers: [
+      {
+        url: 'http://localhost:3000', 
+      },
+    ],
+  };
 
-export const swaggerSpec = swaggerJsdoc(options);
+  const options = {
+    swaggerDefinition,
+    apis: ['./src/routes/*.js'], 
+  };
 
-export function setupSwagger(app) {
+  const swaggerSpec = swaggerJsdoc(options);
+
+  // Serve Swagger API docs
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-}
+};
