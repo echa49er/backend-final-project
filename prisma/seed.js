@@ -36,16 +36,20 @@ async function main() {
   });
 
   // --- Service Type ---
-  const serviceType = await prisma.serviceType.upsert({
+  let serviceType = await prisma.serviceType.findFirst({
     where: { name: 'Oil Change' },
-    update: {},
-    create: {
-      name: 'Oil Change',
-      description: 'Standard oil and filter change',
-      estimatedDurationMinutes: 45,
-      baseCost: 59.99,
-    },
   });
+
+  if (!serviceType) {
+    serviceType = await prisma.serviceType.create({
+      data: {
+        name: 'Oil Change',
+        description: 'Standard oil and filter change',
+        estimatedDurationMinutes: 45,
+        baseCost: 59.99,
+      },
+    });
+  }
 
   // --- Part ---
   const part = await prisma.part.upsert({
