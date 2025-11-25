@@ -1,82 +1,66 @@
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import { PrismaClient } from './generated/prisma/index.js';
-import { setupSwagger } from './swagger.js';
+import { prisma } from './prisma/client.js';
 
-// Route imports
+// --- Import all your route files ---
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
 import vehicleRoutes from './routes/vehicle.routes.js';
-import serviceRoutes from './routes/service.routes.js';
 import mechanicRoutes from './routes/mechanic.routes.js';
+import serviceRoutes from './routes/service.routes.js';
 import serviceTypeRoutes from './routes/serviceType.routes.js';
 import reportRoutes from './routes/report.routes.js';
 
-const prisma = new PrismaClient();
+// --- Import Swagger ---
+import swaggerUi from 'swagger-ui-express'; // <-- FIX: Import directly from the package
+import specs from './swagger.js'; // <-- FIX: Import 'specs' as the default export
+
+// --- Initialize Express App ---
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ======================
-// Middleware
-// ======================
+// --- Core Middleware ---
 app.use(cors());
-app.use(morgan('tiny'));
+app.use(morgan('dev'));
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
-// Swagger Documentation
-setupSwagger(app);
+// --- API Routes ---
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/vehicles', vehicleRoutes);
+app.use('/api/mechanics', mechanicRoutes);
+app.use('/api/services', serviceRoutes);
+app.use('/api/service-types', serviceTypeRoutes);
+app.use('/api/reports', reportRoutes);
 
-// ======================
-// Test database connection
-// ======================
-app.get('/test', async (req, res) => {
-  try {
-    await prisma.$connect();
-    res.send('Database connection successful');
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Database connection failed');
-  } finally {
-    await prisma.$disconnect();
-  }
+// --- Swagger Documentation Route ---
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(specs));
+
+// --- Health Check Route ---
+app.get('/', (req, res) => {
+  res.status(200).json({ message: 'API is running successfully.' });
 });
 
-// ======================
-// API Routes
-// ======================
-app.use('/auth', authRoutes);
-app.use('/user', userRoutes);
-app.use('/vehicles', vehicleRoutes);
-app.use('/services', serviceRoutes);
-app.use('/mechanics', mechanicRoutes);
-app.use('/service-types', serviceTypeRoutes);
-app.use('/reports', reportRoutes);
-
-// ======================
-// 404 handler
-// ======================
+// --- 404 Not Found Handler ---
 app.use((req, res, next) => {
-  const err = new Error('Not Found');
-  err.status = 404;
-  next(err);
+  const error = new Error('Not Found');
+  error.status = 404;
+  next(error);
 });
 
-// ======================
-// Global error handler
-// ======================
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  if (!err.status) {
-    err.status = 500;
-    err.message = 'Internal Server Error';
-  }
-  res.status(err.status).json({ error: err.message });
+// --- Generic Error Handler ---
+app.use((error, req, res, next) => {
+  res.status(error.status || 500);
+  res.json({
+    error: {
+      message: error.message || 'Internal Server Error',
+    },
+  });
 });
 
-// ======================
-// Start server
-// ======================
+// --- Start Server ---
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server listening on port ${PORT}`);
 });
