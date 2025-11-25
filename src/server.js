@@ -36,7 +36,6 @@ app.use('/api/service-types', serviceTypeRoutes);
 app.use('/api/reports', reportRoutes);
 
 // --- Swagger Documentation Route ---
-// This uses the 'swaggerUi' and 'specs' variables correctly
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // --- Health Check Route ---
