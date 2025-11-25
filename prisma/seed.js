@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Seeding database...");
+  console.log('🌱 Seeding database...');
 
   // --- User ---
   const passwordHash = await bcrypt.hash('password123', 10);
@@ -18,40 +18,62 @@ async function main() {
       firstName: 'Test',
       lastName: 'User',
       phone: '555-1234',
-      address: '123 Main St'
-    }
+      address: '123 Main St',
+    },
+  });
+
+  // --- Mechanic ---
+  const mechanic = await prisma.mechanic.upsert({
+    where: { email: 'mechanic@example.com' },
+    update: {},
+    create: {
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'mechanic@example.com',
+      phone: '555-9876',
+      department: 'General Repair',
+    },
+  });
+
+  // --- Service Type ---
+  const serviceType = await prisma.serviceType.upsert({
+    where: { name: 'Oil Change' },
+    update: {},
+    create: {
+      name: 'Oil Change',
+      description: 'Standard oil and filter change',
+      estimatedDurationMinutes: 45,
+      baseCost: 59.99,
+    },
+  });
+
+  // --- Part ---
+  const part = await prisma.part.upsert({
+    where: { name: 'Oil Filter' }, 
+    update: {},
+    create: {
+      name: 'Oil Filter',
+      description: 'OEM oil filter',
+      currentPrice: 14.99,
+      stockQuantity: 20,
+    },
+  });
+
+  console.log(`🧹 Cleaning old vehicle data for user: ${user.email}...`);
+  await prisma.vehicle.deleteMany({
+    where: { userId: user.id },
   });
 
   // --- Vehicle ---
+  console.log('🚗 Creating new vehicle and service records...');
   const vehicle = await prisma.vehicle.create({
     data: {
       userId: user.id,
       make: 'Toyota',
       model: 'Camry',
       year: 2018,
-      mileage: 45000
-    }
-  });
-
-  // --- Mechanic ---
-  const mechanic = await prisma.mechanic.create({
-    data: {
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'mechanic@example.com',
-      phone: '555-9876',
-      department: 'General Repair'
-    }
-  });
-
-  // --- Service Type ---
-  const serviceType = await prisma.serviceType.create({
-    data: {
-      name: 'Oil Change',
-      description: 'Standard oil and filter change',
-      estimatedDurationMinutes: 45,
-      baseCost: 59.99
-    }
+      mileage: 45000,
+    },
   });
 
   // --- Service ---
@@ -61,8 +83,8 @@ async function main() {
       serviceTypeId: serviceType.id,
       scheduledDate: new Date(),
       status: 'SCHEDULED',
-      notes: 'Initial service'
-    }
+      notes: 'Initial service',
+    },
   });
 
   // --- Service Assignment ---
@@ -70,18 +92,8 @@ async function main() {
     data: {
       serviceId: service.id,
       mechanicId: mechanic.id,
-      hoursWorked: 1.0
-    }
-  });
-
-  // --- Part ---
-  const part = await prisma.part.create({
-    data: {
-      name: 'Oil Filter',
-      description: 'OEM oil filter',
-      currentPrice: 14.99,
-      stockQuantity: 20
-    }
+      hoursWorked: 1.0,
+    },
   });
 
   // --- ServicePart ---
@@ -90,8 +102,8 @@ async function main() {
       serviceId: service.id,
       partId: part.id,
       quantityUsed: 1,
-      unitCost: 14.99
-    }
+      unitCost: 14.99,
+    },
   });
 
   // --- Invoice ---
@@ -101,15 +113,15 @@ async function main() {
       totalAmount: 74.98,
       taxAmount: 4.76,
       paymentStatus: 'PENDING',
-      dueDate: new Date()
-    }
+      dueDate: new Date(),
+    },
   });
 
-  console.log("🌱 Database seeded successfully.");
+  console.log('🌱 Database seeded successfully.');
 }
 
 main()
-  .catch(err => {
+  .catch((err) => {
     console.error(err);
     process.exit(1);
   })
